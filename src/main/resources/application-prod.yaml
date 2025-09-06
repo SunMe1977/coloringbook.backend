@@ -5,15 +5,11 @@ logging:
     com.hansjoerg.coloringbook: DEBUG
 
 spring:
-  profiles:
-      active: dev
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/coloringbook
-    username: hansjoerg
-    password: secretpassword
-    driver-class-name: org.postgresql.Driver
-
+    url: jdbc:postgresql://aws-1-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require
+    username: postgres.yqnawjlxlyuxhlymhnpv
+    password: ${DB_PASSWORD}
+  driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -25,7 +21,7 @@ spring:
         registration:
           google:
             clientId: 686279034351-7h9igi1ef7ja11di7a2f1v8o20ip94lh.apps.googleusercontent.com
-            clientSecret: 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
+            clientSecret: ${GOOGLE_CLIENT_SECRET}
             redirectUri: "{baseUrl}/oauth2/callback/{registrationId}"
             scope:
               - email
@@ -51,19 +47,18 @@ spring:
             userInfoUri: https://graph.facebook.com/v3.0/me?fields=id,first_name,middle_name,last_name,name,email,verified,is_verified,picture.width(250).height(250)
 
 app:
+  app:
+    oauth2:
+      redirectUri: https://aiselfpubcoloringbookstudio.netlify.app/oauth2/redirect
   frontend:
-    baseUrl: http://localhost:5173
+    baseUrl: https://aiselfpubcoloringbookstudio.netlify.app
   auth:
     tokenSecret: 04ca023b39512e46d0c2cf4b48d5aac61d34302994c87ed4eff225dcf3b0a218739f3897051a057f9b846a69ea2927a587044164b7bae5e1306219d50b588cb1
     tokenExpirationMsec: 864000000
   cors:
-    allowedOrigins: http://localhost:5173,http://localhost:8080
+    allowedOrigins: https://aiselfpubcoloringbookstudio.netlify.app,http://localhost:5173,http://localhost:8080,https://coloringbook-backend-ikyz.onrender.com
   oauth2:
-    # After successfully authenticating with the OAuth2 Provider,
-    # we'll be generating an auth token for the user and sending the token to the
-    # redirectUri mentioned by the client in the /oauth2/authorize request.
-    # We're not using cookies because they won't work well in mobile clients.
     authorizedRedirectUris:
-      - http://localhost:5173/oauth2/redirect
+      - https://aiselfpubcoloringbookstudio.netlify.app/oauth2/redirect
       - myandroidapp://oauth2/redirect
       - myiosapp://oauth2/redirect

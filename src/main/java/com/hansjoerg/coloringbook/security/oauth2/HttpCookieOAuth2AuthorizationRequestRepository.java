@@ -1,49 +1,48 @@
 package com.hansjoerg.coloringbook.security.oauth2;
 
-import com.hansjoerg.coloringbook.util.CookieUtils;
 import com.nimbusds.oauth2.sdk.util.StringUtils;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Component
 public class HttpCookieOAuth2AuthorizationRequestRepository implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
-    public static final String OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME = "oauth2_auth_request";
-    public static final String REDIRECT_URI_PARAM_COOKIE_NAME = "redirect_uri";
-    private static final int cookieExpireSeconds = 180;
+
+    public static final String REDIRECT_URI_PARAM_SESSION_ATTRIBUTE = "redirect_uri";
+    public static final String AUTH_REQUEST_SESSION_ATTRIBUTE = "oauth2_auth_request";
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
-        return CookieUtils.getCookie(request, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME)
-                .map(cookie -> CookieUtils.deserialize(cookie, OAuth2AuthorizationRequest.class))
-                .orElse(null);
+        Object authRequest = request.getSession().getAttribute(AUTH_REQUEST_SESSION_ATTRIBUTE);
+        if (authRequest instanceof OAuth2AuthorizationRequest) {
+            return (OAuth2AuthorizationRequest) authRequest;
+        }
+        return null;
     }
 
     @Override
-    public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest, HttpServletRequest request, HttpServletResponse response) {
-        if (authorizationRequest == null) {
-            CookieUtils.deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
-            CookieUtils.deleteCookie(request, response, REDIRECT_URI_PARAM_COOKIE_NAME);
-            return;
+    public void saveAuthorizationRequest(OAuth2AuthorizationRequest authorizationRequest,
+                                         HttpServletRequest request,
+                                         HttpServletResponse response) {
+        if (authorizationRequest != null) {
+            request.getSession().setAttribute(AUTH_REQUEST_SESSION_ATTRIBUTE, authorizationRequest);
         }
 
-        CookieUtils.addCookie(response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME, CookieUtils.serialize(authorizationRequest), cookieExpireSeconds);
-        String redirectUriAfterLogin = request.getParameter(REDIRECT_URI_PARAM_COOKIE_NAME);
+        String redirectUriAfterLogin = request.getParameter(REDIRECT_URI_PARAM_SESSION_ATTRIBUTE);
         if (StringUtils.isNotBlank(redirectUriAfterLogin)) {
-            CookieUtils.addCookie(response, REDIRECT_URI_PARAM_COOKIE_NAME, redirectUriAfterLogin, cookieExpireSeconds);
+            request.getSession().setAttribute(REDIRECT_URI_PARAM_SESSION_ATTRIBUTE, redirectUriAfterLogin);
         }
     }
 
     @Override
-    public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request) {
-        return this.loadAuthorizationRequest(request);
-    }
-
-    public void removeAuthorizationRequestCookies(HttpServletRequest request, HttpServletResponse response) {
-        CookieUtils.deleteCookie(request, response, OAUTH2_AUTHORIZATION_REQUEST_COOKIE_NAME);
-        CookieUtils.deleteCookie(request, response, REDIRECT_URI_PARAM_COOKIE_NAME);
+    public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request,
+                                                                 HttpServletResponse response) {
+        OAuth2AuthorizationRequest removedRequest = loadAuthorizationRequest(request);
+        request.getSession().removeAttribute(AUTH_REQUEST_SESSION_ATTRIBUTE);
+        request.getSession().removeAttribute(REDIRECT_URI_PARAM_SESSION_ATTRIBUTE);
+        return removedRequest;
     }
 }
