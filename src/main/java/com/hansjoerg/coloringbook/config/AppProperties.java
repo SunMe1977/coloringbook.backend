@@ -8,22 +8,27 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-@Getter
-@Component // ✅ Makes it a Spring-managed bean
-@ConfigurationProperties(prefix = "app") // ✅ Binds values from application.yaml
+@Component
+@ConfigurationProperties(prefix = "app")
 public class AppProperties {
-    private final Auth auth = new Auth();
-    private final OAuth2 oauth2 = new OAuth2();
-    private final Cors cors = new Cors();
-    private final Frontend frontend = new Frontend();
 
+    @Getter
+    private final Auth auth = new Auth();
+
+    @Getter
+    private final OAuth2 oauth2 = new OAuth2();
+
+    @Getter
+    private final Cors cors = new Cors();
+
+    @Getter
+    private final Frontend frontend = new Frontend();
 
     @Setter
     @Getter
     public static class Auth {
         private String tokenSecret;
         private long tokenExpirationMsec;
-
     }
 
     @Setter
@@ -32,21 +37,16 @@ public class AppProperties {
         private String allowedOrigins;
     }
 
-    @Getter
-    public static final class OAuth2 {
-        private String redirectUri;
-        private List<String> authorizedRedirectUris = new ArrayList<>();
-
-        public OAuth2 authorizedRedirectUris(List<String> authorizedRedirectUris) {
-            this.authorizedRedirectUris = authorizedRedirectUris;
-            return this;
-        }
-    }
-
     @Setter
     @Getter
     public static class Frontend {
         private String baseUrl;
     }
 
+    @Setter
+    @Getter
+    public static class OAuth2 {
+        private String redirectUri;
+        private List<String> authorizedRedirectUris = new ArrayList<>();
+    }
 }
