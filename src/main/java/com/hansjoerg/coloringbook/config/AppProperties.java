@@ -31,10 +31,12 @@ public class AppProperties {
         private long tokenExpirationMsec;
     }
 
-    @Setter
+    @Component
     @Getter
+    @Setter
+    @ConfigurationProperties(prefix = "app.cors")
     public static class Cors {
-        private List<String> allowedOrigins = new ArrayList<>();
+        private List<String> allowedOrigins;
     }
 
     @Setter
