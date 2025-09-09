@@ -14,12 +14,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Autowired
     private AppProperties appProperties;
 
-    String allowedOrigins = appProperties.getCors().getAllowedOrigins();
-
     @Override
     public void addCorsMappings(CorsRegistry registry) {
+        String allowedOrigins = appProperties.getCors().getAllowedOrigins();
         registry.addMapping("/**")
-                .allowedOrigins(String.valueOf(allowedOrigins))
+                .allowedOrigins(allowedOrigins.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
