@@ -4,16 +4,11 @@ logging:
     org.springframework.web: DEBUG
     com.hansjoerg.coloringbook: DEBUG
 
-spring:
-  profiles:
-      active: dev
-
   datasource:
     url: jdbc:postgresql://localhost:5432/coloringbook
     username: hansjoerg
     password: secretpassword
     driver-class-name: org.postgresql.Driver
-
 
   jpa:
     hibernate:
