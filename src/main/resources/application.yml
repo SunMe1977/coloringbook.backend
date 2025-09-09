@@ -5,9 +5,8 @@ logging:
     com.hansjoerg.coloringbook: DEBUG
 
 spring:
-  config:
-    activate:
-      on-profile: dev
+  profiles:
+    active: dev
 
   datasource:
     url: jdbc:postgresql://localhost:5432/coloringbook
