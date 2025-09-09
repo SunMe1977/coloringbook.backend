@@ -28,7 +28,7 @@ public class AppProperties {
     @Setter
     @Getter
     public static class Cors {
-        private List<String> allowedOrigins = new ArrayList<>();
+        private String allowedOrigins;
     }
 
     @Setter
