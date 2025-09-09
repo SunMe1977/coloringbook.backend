@@ -4,6 +4,11 @@ logging:
     org.springframework.web: DEBUG
     com.hansjoerg.coloringbook: DEBUG
 
+spring:
+  config:
+    activate:
+      on-profile: dev
+
   datasource:
     url: jdbc:postgresql://localhost:5432/coloringbook
     username: hansjoerg
