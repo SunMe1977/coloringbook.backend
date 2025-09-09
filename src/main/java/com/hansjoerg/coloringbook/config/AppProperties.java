@@ -10,18 +10,12 @@ import java.util.List;
 
 @Component
 @ConfigurationProperties(prefix = "app")
+@Getter
 public class AppProperties {
 
-    @Getter
     private final Auth auth = new Auth();
-
-    @Getter
     private final OAuth2 oauth2 = new OAuth2();
-
-    @Getter
     private final Cors cors = new Cors();
-
-    @Getter
     private final Frontend frontend = new Frontend();
 
     @Setter
@@ -31,12 +25,10 @@ public class AppProperties {
         private long tokenExpirationMsec;
     }
 
-    @Component
-    @Getter
     @Setter
-    @ConfigurationProperties(prefix = "app.cors")
+    @Getter
     public static class Cors {
-        private List<String> allowedOrigins;
+        private List<String> allowedOrigins = new ArrayList<>();
     }
 
     @Setter

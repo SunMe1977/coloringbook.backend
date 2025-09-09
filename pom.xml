@@ -77,8 +77,20 @@
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <version>6.0.0</version>
-      <scope>provided</scope>
+      <scope>compile</scope> <!-- NOT provided -->
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
+      <version>12.0.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
+      <version>12.0.7</version>
+    </dependency>
+
+
 
     <!-- PostgreSQL Driver -->
     <dependency>
