@@ -56,21 +56,20 @@ public class SecurityConfig {
         this.tokenProvider = tokenProvider;
     }
 
-    @Order(1)
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
-    }
-
     @Bean
     @Order(0)
     public AuthenticationManager swaggerAuthenticationManager() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(users()); // 👈 uses your in-memory user
+        provider.setUserDetailsService(users());
         provider.setPasswordEncoder(swaggerPasswordEncoder());
         return new ProviderManager(provider);
     }
 
+    @Bean
+    @Order(1)
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
+    }
 
     @Bean
     public TokenAuthenticationFilter tokenAuthenticationFilter() {
@@ -82,7 +81,7 @@ public class SecurityConfig {
     public SecurityFilterChain swaggerSecurity(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
-                .authenticationManager(swaggerAuthenticationManager()) // 👈 use correct manager
+                .authenticationManager(swaggerAuthenticationManager())
                 .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("SWAGGER"))
                 .httpBasic(withDefaults())
                 .csrf(csrf -> csrf.disable());
@@ -90,15 +89,15 @@ public class SecurityConfig {
         return http.build();
     }
 
-    @Order(2)
     @Bean
+    @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
         JsonUsernamePasswordAuthenticationFilter jsonLoginFilter = new JsonUsernamePasswordAuthenticationFilter();
         jsonLoginFilter.setAuthenticationManager(authenticationManager);
         jsonLoginFilter.setFilterProcessesUrl("/auth/login");
         jsonLoginFilter.setAuthenticationSuccessHandler((request, response, authentication) -> {
             String token = tokenProvider.createToken(authentication);
-            String redirectUri = appProperties.getOauth2().getAuthorizedRedirectUris().get(0);
+            String redirectUri = appProperties.getFrontend().getBaseUrl() + "/oauth2/redirect";
             String redirectUrl = redirectUri + "?token=" + token;
             response.sendRedirect(redirectUrl);
         });
@@ -111,7 +110,7 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .httpBasic(withDefaults()) // Enable basic auth for Swagger
+                .httpBasic(withDefaults())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new RestAuthenticationEntryPoint()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth2/**", "/").permitAll()
@@ -151,20 +150,19 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // 👇 In-memory user for Swagger access
     @Bean
     public UserDetailsService users() {
         String password = appProperties.getSwagger().getPassword();
         return new InMemoryUserDetailsManager(
                 User.withUsername("swagger")
-                        .password(password) // No encoding
+                        .password("{noop}" + password)
                         .roles("SWAGGER")
                         .build()
         );
     }
+
     @Bean
     public PasswordEncoder swaggerPasswordEncoder() {
         return NoOpPasswordEncoder.getInstance();
     }
-
 }
