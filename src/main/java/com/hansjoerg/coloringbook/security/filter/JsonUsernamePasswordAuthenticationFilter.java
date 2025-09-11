@@ -7,10 +7,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.MediaType; // Import MediaType
 
 import java.io.IOException;
 
@@ -19,30 +23,49 @@ import java.io.IOException;
  */
 public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
+    private static final Logger logger = LoggerFactory.getLogger(JsonUsernamePasswordAuthenticationFilter.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Override
-    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) {
-        String email = request.getParameter("email");
-        String password = request.getParameter("password");
-
-        if (email == null || password == null) {
-            throw new RuntimeException("Missing email or password");
-        }
-
-        UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(email, password);
-        setDetails(request, authRequest);
-
-        return this.getAuthenticationManager().authenticate(authRequest);
+    public JsonUsernamePasswordAuthenticationFilter() {
+        // Default constructor, needed if we override methods and don't explicitly call super(authenticationManager)
+        super();
     }
 
-
-    // Optional: override if you want to customize post-auth behavior
     @Override
-    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response,
-                                            FilterChain chain, Authentication authResult)
-            throws IOException, ServletException {
-        super.successfulAuthentication(request, response, chain, authResult);
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
+        logger.debug("Attempting JSON authentication for request URI: {}", request.getRequestURI());
+        if (!request.getMethod().equals("POST")) {
+            logger.warn("Authentication method not supported: {} for URI: {}", request.getMethod(), request.getRequestURI());
+            throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
+        }
+
+        // NEW: Log the Content-Type header
+        String contentType = request.getContentType();
+        logger.debug("Request Content-Type: {}", contentType);
+
+        if (contentType == null || !contentType.contains(MediaType.APPLICATION_JSON_VALUE)) {
+            logger.warn("Authentication request did not have Content-Type: application/json for URI: {}", request.getRequestURI());
+            throw new AuthenticationServiceException("Authentication request must be application/json");
+        }
+
+        try {
+            LoginRequest loginRequest = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
+            logger.debug("Parsed login request for email: {}", loginRequest.getEmail());
+            UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(
+                    loginRequest.getEmail(), loginRequest.getPassword());
+            setDetails(request, authRequest);
+            return this.getAuthenticationManager().authenticate(authRequest);
+        } catch (IOException e) {
+            logger.error("Failed to parse authentication request body for URI: {}", request.getRequestURI(), e);
+            throw new AuthenticationServiceException("Failed to parse authentication request body", e);
+        }
+    }
+
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
+        logger.error("Unsuccessful authentication in JsonUsernamePasswordAuthenticationFilter: {}", failed.getMessage());
+        // Delegate to the configured AuthenticationFailureHandler
+        getFailureHandler().onAuthenticationFailure(request, response, failed);
     }
 
     // DTO for login payload

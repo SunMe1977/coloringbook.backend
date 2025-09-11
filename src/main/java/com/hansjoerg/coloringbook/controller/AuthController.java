@@ -5,7 +5,6 @@ import com.hansjoerg.coloringbook.model.AuthProvider;
 import com.hansjoerg.coloringbook.model.User;
 import com.hansjoerg.coloringbook.payload.ApiResponse;
 import com.hansjoerg.coloringbook.payload.AuthResponse;
-import com.hansjoerg.coloringbook.payload.LoginRequest;
 import com.hansjoerg.coloringbook.payload.SignUpRequest;
 import com.hansjoerg.coloringbook.repository.UserRepository;
 import com.hansjoerg.coloringbook.security.TokenProvider;
@@ -38,21 +37,7 @@ public class AuthController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        String token = tokenProvider.createToken(authentication);
-
-        return ResponseEntity.ok(new AuthResponse(token));
-    }
+    // The /login endpoint is now handled by JsonUsernamePasswordAuthenticationFilter
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
@@ -60,6 +45,7 @@ public class AuthController {
             throw new BadRequestException("Email address already in use.");
         }
 
+        // Creating user's account
         User user = new User();
         user.setName(signUpRequest.getName());
         user.setEmail(signUpRequest.getEmail());
@@ -68,11 +54,17 @@ public class AuthController {
 
         User result = userRepository.save(user);
 
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentContextPath().path("/user/me")
-                .buildAndExpand(result.getId()).toUri();
+        // Authenticate the newly registered user and generate a token
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        signUpRequest.getEmail(),
+                        signUpRequest.getPassword()
+                )
+        );
 
-        return ResponseEntity.created(location)
-                .body(new ApiResponse(true, "User registered successfully"));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String token = tokenProvider.createToken(authentication);
+        return ResponseEntity.ok(new AuthResponse(token));
     }
 }

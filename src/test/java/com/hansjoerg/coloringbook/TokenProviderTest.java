@@ -16,9 +16,6 @@ import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-//import static org.junit.jupiter.api.Assertions.*;
-
-@Disabled
 @SpringBootTest
 public class TokenProviderTest {
 
