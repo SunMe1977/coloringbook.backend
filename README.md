@@ -9,7 +9,8 @@ https://www.callicoder.com/spring-boot-security-oauth2-social-login-part-1/
 mvn spring-boot:run
 mvn spring-boot:run -Dspring-boot.run.arguments=--debug
 
-
+Set ENV
+setx SWAGGER_PWD "secret123"
 docker compose up -d
 
 KI MS

@@ -47,7 +47,8 @@ spring:
             userInfoUri: https://graph.facebook.com/v3.0/me?fields=id,first_name,middle_name,last_name,name,email,verified,is_verified,picture.width(250).height(250)
 
 app:
-  app:
+  swagger:
+    password: ${SWAGGER_PWD}
   frontend:
     baseUrl: ${FRONTEND_URL}
   auth:

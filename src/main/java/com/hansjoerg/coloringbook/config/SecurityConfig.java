@@ -6,7 +6,9 @@ import com.hansjoerg.coloringbook.security.oauth2.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,8 +16,12 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -50,16 +56,41 @@ public class SecurityConfig {
         this.tokenProvider = tokenProvider;
     }
 
+    @Order(1)
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
     @Bean
+    @Order(0)
+    public AuthenticationManager swaggerAuthenticationManager() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(users()); // 👈 uses your in-memory user
+        provider.setPasswordEncoder(swaggerPasswordEncoder());
+        return new ProviderManager(provider);
+    }
+
+
+    @Bean
     public TokenAuthenticationFilter tokenAuthenticationFilter() {
         return new TokenAuthenticationFilter(tokenProvider, customUserDetailsService);
     }
 
+    @Bean
+    @Order(1)
+    public SecurityFilterChain swaggerSecurity(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                .authenticationManager(swaggerAuthenticationManager()) // 👈 use correct manager
+                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("SWAGGER"))
+                .httpBasic(withDefaults())
+                .csrf(csrf -> csrf.disable());
+
+        return http.build();
+    }
+
+    @Order(2)
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
         JsonUsernamePasswordAuthenticationFilter jsonLoginFilter = new JsonUsernamePasswordAuthenticationFilter();
@@ -80,7 +111,7 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .httpBasic(AbstractHttpConfigurer::disable)
+                .httpBasic(withDefaults()) // Enable basic auth for Swagger
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(new RestAuthenticationEntryPoint()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth2/**", "/").permitAll()
@@ -119,4 +150,21 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    // 👇 In-memory user for Swagger access
+    @Bean
+    public UserDetailsService users() {
+        String password = appProperties.getSwagger().getPassword();
+        return new InMemoryUserDetailsManager(
+                User.withUsername("swagger")
+                        .password(password) // No encoding
+                        .roles("SWAGGER")
+                        .build()
+        );
+    }
+    @Bean
+    public PasswordEncoder swaggerPasswordEncoder() {
+        return NoOpPasswordEncoder.getInstance();
+    }
+
 }

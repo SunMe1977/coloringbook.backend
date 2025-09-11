@@ -13,10 +13,17 @@ import java.util.List;
 @Getter
 public class AppProperties {
 
+    private final Swagger swagger = new Swagger();
     private final Auth auth = new Auth();
     private final OAuth2 oauth2 = new OAuth2();
     private final Cors cors = new Cors();
     private final Frontend frontend = new Frontend();
+
+    @Setter
+    @Getter
+    public static class Swagger {
+        private String password;
+    }
 
     @Setter
     @Getter
