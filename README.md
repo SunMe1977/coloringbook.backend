@@ -13,5 +13,8 @@ Set ENV
 setx SWAGGER_PWD "secret123"
 docker compose up -d
 
+Register the Auth API Keys on :
+https://developers.facebook.com/apps/
+
 KI MS
 https://learn.microsoft.com/en-us/azure/ai-foundry/openai/dall-e-quickstart?tabs=command-line%2Cgpt-image-1%2Capi-key%2Ctypescript-keyless&pivots=programming-language-java
