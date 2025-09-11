@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
@@ -83,13 +82,13 @@
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
       <version>${jjwt.version}</version>
-      <scope>runtime</scope>
+      <!-- Removed scope=runtime to ensure compile-time availability -->
     </dependency>
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-jackson</artifactId>
       <version>${jjwt.version}</version>
-      <scope>runtime</scope>
+      <!-- Removed scope=runtime to ensure compile-time availability -->
     </dependency>
 
     <!-- Lombok -->
