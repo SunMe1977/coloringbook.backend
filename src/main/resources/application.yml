@@ -51,6 +51,9 @@ spring:
     enabled: false # Disabled Flyway
     locations: classpath:db/migration
     baseline-on-migrate: true
+  liquibase: # Liquibase configuration
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml # Path to your master changelog
 
 app:
   swagger:

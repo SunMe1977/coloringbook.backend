@@ -28,6 +28,7 @@
     <maven.compiler.proc>full</maven.compiler.proc>
     <lombok.version>1.18.38</lombok.version>
     <jjwt.version>0.12.5</jjwt.version>
+    <liquibase.version>4.28.0</liquibase.version> <!-- Added Liquibase version -->
   </properties>
 
   <dependencies>
@@ -57,11 +58,11 @@
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
 
-    <!-- Flyway for database migrations -->
+    <!-- Liquibase for database migrations -->
     <dependency>
-      <groupId>org.flywaydb</groupId>
-      <artifactId>flyway-core</artifactId>
-      <version>10.15.0</version> <!-- Updated Flyway version -->
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+      <version>${liquibase.version}</version>
     </dependency>
 
     <!-- OAuth2 Client -->
@@ -88,13 +89,11 @@
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-impl</artifactId>
       <version>${jjwt.version}</version>
-      <!-- Removed scope=runtime to ensure compile-time availability -->
     </dependency>
     <dependency>
       <groupId>io.jsonwebtoken</groupId>
       <artifactId>jjwt-jackson</artifactId>
       <version>${jjwt.version}</version>
-      <!-- Removed scope=runtime to ensure compile-time availability -->
     </dependency>
 
     <!-- Lombok -->
