@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hansjoerg.coloringbook.config.AppProperties;
 import com.hansjoerg.coloringbook.model.AuthProvider;
 import com.hansjoerg.coloringbook.model.User;
+import com.hansjoerg.coloringbook.payload.AuthResponse;
 import com.hansjoerg.coloringbook.payload.LoginRequest;
 import com.hansjoerg.coloringbook.payload.SignUpRequest;
 import com.hansjoerg.coloringbook.repository.UserRepository;
@@ -44,9 +45,6 @@ public class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
-        // WARNING: Uncommenting this line will delete all data from the 'users' table
-        // in your configured database before each test. Use with caution, especially
-        // if using a shared development database. For production, use a dedicated test database.
         userRepository.deleteAll();
     }
 
@@ -59,29 +57,26 @@ public class AuthControllerTest {
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signUpRequest)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.message").value("User registered successfully"));
+                .andExpect(status().isOk()) // Changed from isCreated() to isOk()
+                .andExpect(jsonPath("$.accessToken").exists()) // Expect accessToken
+                .andExpect(jsonPath("$.tokenType").value("Bearer")); // Expect tokenType
 
-        // Explicitly verify user persistence and data integrity
         Optional<User> registeredUser = userRepository.findByEmail(email);
         assertTrue(registeredUser.isPresent(), "User should be found in the database after registration");
         assertEquals(name, registeredUser.get().getName());
         assertEquals(email, registeredUser.get().getEmail());
         assertEquals(AuthProvider.local, registeredUser.get().getProvider());
-        assertNotNull(registeredUser.get().getPassword()); // Password should be encoded
+        assertNotNull(registeredUser.get().getPassword());
     }
 
     @Test
     void testUserRegistration_DuplicateEmail() throws Exception {
-        // Register first user
         SignUpRequest signUpRequest1 = new SignUpRequest("Test User 1", "duplicate@example.com", "password123");
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signUpRequest1)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk()); // Expect 200 OK for the first signup
 
-        // Attempt to register second user with same email
         SignUpRequest signUpRequest2 = new SignUpRequest("Test User 2", "duplicate@example.com", "password456");
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,47 +87,46 @@ public class AuthControllerTest {
 
     @Test
     void testUserLogin_Success() throws Exception {
-        // First, register a user
+        // First, register a user (this will now return 200 OK with a token)
         SignUpRequest signUpRequest = new SignUpRequest("Login User", "login@example.com", "loginpassword");
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signUpRequest)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk()); // Expect 200 OK for signup
 
         // Now, attempt to log in
         LoginRequest loginRequest = new LoginRequest("login@example.com", "loginpassword");
         MvcResult result = mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isFound()) // 302 Found for redirect
-                .andExpect(header().exists("Location"))
+                .andExpect(status().isOk()) // Expect 200 OK for successful local login
+                .andExpect(jsonPath("$.accessToken").exists()) // Expect accessToken in JSON body
+                .andExpect(jsonPath("$.tokenType").value("Bearer")) // Expect tokenType in JSON body
                 .andReturn();
 
-        String redirectUrl = result.getResponse().getHeader("Location");
-        assertNotNull(redirectUrl);
-        assertTrue(redirectUrl.startsWith(appProperties.getFrontend().getBaseUrl() + "/oauth2/redirect"));
-        assertTrue(redirectUrl.contains("token="));
+        String responseContent = result.getResponse().getContentAsString();
+        AuthResponse authResponse = objectMapper.readValue(responseContent, AuthResponse.class);
+        String token = authResponse.getAccessToken();
 
-        String token = redirectUrl.substring(redirectUrl.indexOf("token=") + 6);
+        assertNotNull(token);
         assertTrue(tokenProvider.validateToken(token));
     }
 
     @Test
     void testUserLogin_Failure_WrongPassword() throws Exception {
-        // First, register a user
+        // First, register a user (this will now return 200 OK with a token)
         SignUpRequest signUpRequest = new SignUpRequest("Wrong Pass User", "wrongpass@example.com", "correctpassword");
         mockMvc.perform(post("/auth/signup")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(signUpRequest)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isOk()); // Expect 200 OK for signup
 
-        // Now, attempt to log in with wrong password
         LoginRequest loginRequest = new LoginRequest("wrongpass@example.com", "incorrectpassword");
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false)) // Expecting JSON response
+                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Login failed: Bad credentials"));
     }
 
@@ -143,7 +137,7 @@ public class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false)) // Expecting JSON response
+                .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.message").value("Login failed: Bad credentials"));
     }
 }

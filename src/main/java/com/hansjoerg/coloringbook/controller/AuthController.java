@@ -37,34 +37,31 @@ public class AuthController {
     @Autowired
     private TokenProvider tokenProvider;
 
-    // The /login endpoint is now handled by JsonUsernamePasswordAuthenticationFilter
-
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
             throw new BadRequestException("Email address already in use.");
         }
 
-        // Creating user's account
+        // Create user
         User user = new User();
         user.setName(signUpRequest.getName());
         user.setEmail(signUpRequest.getEmail());
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
         user.setProvider(AuthProvider.local);
+        userRepository.save(user); // Save the user
 
-        User result = userRepository.save(user);
-
-        // Authenticate the newly registered user and generate a token
+        // Perform authentication (auto-login)
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         signUpRequest.getEmail(),
                         signUpRequest.getPassword()
                 )
         );
-
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
+        // Generate token
         String token = tokenProvider.createToken(authentication);
-        return ResponseEntity.ok(new AuthResponse(token));
+        return ResponseEntity.ok(new AuthResponse(token)); // Return 200 OK with AuthResponse
     }
 }

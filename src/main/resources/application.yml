@@ -16,7 +16,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate # Changed from 'update' to 'validate'
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   security:
     oauth2:
@@ -37,7 +37,7 @@ spring:
               - email
               - public_profile
           github:
-            clientId: d3e47fc2ddd966fa4352
+            clientId: d3e47fc2ddd9666fa4352
             clientSecret: 3bc0f6b8332f93076354c2a5bada2f5a05aea60d
             redirectUri: "{baseUrl}/oauth2/callback/{registrationId}"
             scope:
@@ -48,6 +48,10 @@ spring:
             authorizationUri: https://www.facebook.com/v3.0/dialog/oauth
             tokenUri: https://graph.facebook.com/v3.0/oauth/access_token
             userInfoUri: https://graph.facebook.com/v3.0/me?fields=id,first_name,middle_name,last_name,name,email,verified,is_verified,picture.width(250).height(250)
+  flyway:
+    enabled: true
+    locations: classpath:db/migration # Default location, but good to be explicit
+    baseline-on-migrate: true # Add this line
 
 app:
   swagger:
@@ -55,10 +59,10 @@ app:
   frontend:
     baseUrl: ${FRONTEND_URL}
   auth:
-    tokenSecret: 04ca023b39512e46d0c2cf4b48d5aac61d34302994c87ed4eff225dcf3b0a218739f3897051a057f9b846a69ea2927a587044164b7bae5e1306219d50b588cb1
+    tokenSecret: ${TOKEN_SECRET} # Using environment variable
     tokenExpirationMsec: 864000000
   cors:
-    allowedOrigins: ${FRONTEND_URL},http://localhost:8080,http://localhost:5173
+    allowedOrigins: ${FRONTEND_URL},http://localhost:8080
   oauth2:
     # After successfully authenticating with the OAuth2 Provider,
     # we'll be generating an auth token for the user and sending the token to the

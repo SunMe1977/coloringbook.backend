@@ -11,6 +11,8 @@ mvn spring-boot:run -Dspring-boot.run.arguments=--debug
 
 Set ENV
 setx SWAGGER_PWD "secret123"
+setx TOKEN_SECRET 04ca022b33612e46d0c2cf4b48d5aac61d34302994c87ed4eff225dcf3b0a218739f3897051a057f9b846a69ea2927a587044164b7bae5e1306219d50b588cb1
+
 docker compose up -d
 
 Register the Auth API Keys on :

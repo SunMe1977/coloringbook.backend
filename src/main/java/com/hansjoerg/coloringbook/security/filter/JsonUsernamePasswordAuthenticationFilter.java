@@ -1,12 +1,11 @@
 package com.hansjoerg.coloringbook.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hansjoerg.coloringbook.payload.LoginRequest; // Correct import
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.Getter;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -14,7 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.http.MediaType; // Import MediaType
+import org.springframework.http.MediaType;
 
 import java.io.IOException;
 
@@ -27,7 +26,6 @@ public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAu
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public JsonUsernamePasswordAuthenticationFilter() {
-        // Default constructor, needed if we override methods and don't explicitly call super(authenticationManager)
         super();
     }
 
@@ -39,7 +37,6 @@ public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAu
             throw new AuthenticationServiceException("Authentication method not supported: " + request.getMethod());
         }
 
-        // NEW: Log the Content-Type header
         String contentType = request.getContentType();
         logger.debug("Request Content-Type: {}", contentType);
 
@@ -49,6 +46,7 @@ public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAu
         }
 
         try {
+            // Use the LoginRequest DTO from the payload package
             LoginRequest loginRequest = objectMapper.readValue(request.getInputStream(), LoginRequest.class);
             logger.debug("Parsed login request for email: {}", loginRequest.getEmail());
             UsernamePasswordAuthenticationToken authRequest = new UsernamePasswordAuthenticationToken(
@@ -64,15 +62,6 @@ public class JsonUsernamePasswordAuthenticationFilter extends UsernamePasswordAu
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         logger.error("Unsuccessful authentication in JsonUsernamePasswordAuthenticationFilter: {}", failed.getMessage());
-        // Delegate to the configured AuthenticationFailureHandler
         getFailureHandler().onAuthenticationFailure(request, response, failed);
-    }
-
-    // DTO for login payload
-    @Setter
-    @Getter
-    public static class LoginRequest {
-        private String email;
-        private String password;
     }
 }

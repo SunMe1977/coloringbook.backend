@@ -1,16 +1,21 @@
 package com.hansjoerg.coloringbook.security;
 
 import com.hansjoerg.coloringbook.config.AppProperties;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
+import javax.crypto.SecretKey;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
@@ -18,14 +23,15 @@ public class TokenProvider {
 
     private static final Logger logger = LoggerFactory.getLogger(TokenProvider.class);
     private final AppProperties appProperties;
+    private final SecretKey signingKey;
 
     public TokenProvider(AppProperties appProperties) {
         this.appProperties = appProperties;
+        this.signingKey = Keys.hmacShaKeyFor(Base64.getDecoder().decode(appProperties.getAuth().getTokenSecret()));
     }
 
     private Key getSigningKey() {
-        byte[] keyBytes = appProperties.getAuth().getTokenSecret().getBytes(StandardCharsets.UTF_8);
-        return new SecretKeySpec(keyBytes, SignatureAlgorithm.HS512.getJcaName());
+        return signingKey;
     }
 
     public String createToken(Authentication authentication) {
@@ -43,8 +49,8 @@ public class TokenProvider {
     }
 
     public Long getUserIdFromToken(String token) {
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        Claims claims = Jwts.parser()
+                .verifyWith((SecretKey) getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -54,12 +60,12 @@ public class TokenProvider {
 
     public boolean validateToken(String authToken) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(getSigningKey())
+            Jwts.parser()
+                    .verifyWith((SecretKey) getSigningKey())
                     .build()
                     .parseClaimsJws(authToken);
             return true;
-        } catch (SecurityException | MalformedJwtException ex) {
+        } catch (io.jsonwebtoken.security.SecurityException | MalformedJwtException ex) {
             logger.error("Invalid JWT signature or token");
         } catch (ExpiredJwtException ex) {
             logger.error("Expired JWT token");
