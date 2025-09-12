@@ -28,7 +28,7 @@
     <maven.compiler.proc>full</maven.compiler.proc>
     <lombok.version>1.18.38</lombok.version>
     <jjwt.version>0.12.5</jjwt.version>
-    <liquibase.version>4.28.0</liquibase.version> <!-- Added Liquibase version -->
+    <liquibase.version>4.28.0</liquibase.version>
   </properties>
 
   <dependencies>
@@ -58,6 +58,11 @@
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context-indexer</artifactId>
+      <optional>true</optional>
+    </dependency>
     <!-- Liquibase for database migrations -->
     <dependency>
       <groupId>org.liquibase</groupId>
@@ -156,6 +161,7 @@
           <compilerArgs>--enable-preview</compilerArgs>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
 

@@ -1,10 +1,16 @@
 logging:
   level:
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
-    com.hansjoerg.coloringbook: DEBUG
+    org.springframework.security: INFO # Changed from DEBUG to INFO for production
+    org.springframework.web: INFO # Changed from DEBUG to INFO for production
+    com.hansjoerg.coloringbook: INFO # Changed from DEBUG to INFO for production
 
 spring:
+  main:
+    lazy-initialization: true
+    banner-mode: off
+  context: # Added this section
+    index:
+      enabled: true # Added this line
   datasource:
     url: jdbc:postgresql://aws-1-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require&reWriteBatchedInserts=true&prepareThreshold=0
     username: postgres.yqnawjlxlyuxhlymhnpv
@@ -51,6 +57,12 @@ spring:
   liquibase: # Liquibase configuration
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml # Path to your master changelog
+
+server: # Added server configuration for compression
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,text/javascript,application/javascript
+    min-response-size: 1024 # Minimum size in bytes to compress
 
 app:
   swagger:

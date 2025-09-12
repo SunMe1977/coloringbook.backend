@@ -5,6 +5,9 @@ logging:
     com.hansjoerg.coloringbook: DEBUG
 
 spring:
+  main:
+    lazy-initialization: true
+    banner-mode: off
   profiles:
     active: dev
 
@@ -54,6 +57,12 @@ spring:
   liquibase: # Liquibase configuration
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml # Path to your master changelog
+
+server: # Added server configuration for compression
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,text/javascript,application/javascript
+    min-response-size: 1024 # Minimum size in bytes to compress
 
 app:
   swagger:
