@@ -9,7 +9,7 @@ spring:
     active: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/coloringbook?reWriteBatchedInserts=true
+    url: jdbc:postgresql://localhost:5432/coloringbook?reWriteBatchedInserts=true&prepareThreshold=0
     username: hansjoerg
     password: secretpassword
     driver-class-name: org.postgresql.Driver

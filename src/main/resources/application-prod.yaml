@@ -6,7 +6,7 @@ logging:
 
 spring:
   datasource:
-    url: jdbc:postgresql://aws-1-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require&reWriteBatchedInserts=true
+    url: jdbc:postgresql://aws-1-us-west-1.pooler.supabase.com:6543/postgres?sslmode=require&reWriteBatchedInserts=true&prepareThreshold=0
     username: postgres.yqnawjlxlyuxhlymhnpv
     password: ${DB_PASSWORD}
   driver-class-name: org.postgresql.Driver
