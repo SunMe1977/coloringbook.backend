@@ -61,6 +61,7 @@
     <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-core</artifactId>
+      <version>10.15.0</version> <!-- Updated Flyway version -->
     </dependency>
 
     <!-- OAuth2 Client -->

@@ -9,15 +9,14 @@ spring:
     active: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/coloringbook
+    url: jdbc:postgresql://localhost:5432/coloringbook?reWriteBatchedInserts=true
     username: hansjoerg
     password: secretpassword
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate # Changed from 'update' to 'validate'
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+      ddl-auto: validate
   security:
     oauth2:
       client:
@@ -50,8 +49,8 @@ spring:
             userInfoUri: https://graph.facebook.com/v3.0/me?fields=id,first_name,middle_name,last_name,name,email,verified,is_verified,picture.width(250).height(250)
   flyway:
     enabled: true
-    locations: classpath:db/migration # Default location, but good to be explicit
-    baseline-on-migrate: true # Add this line
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
 app:
   swagger:
@@ -59,15 +58,11 @@ app:
   frontend:
     baseUrl: ${FRONTEND_URL}
   auth:
-    tokenSecret: ${TOKEN_SECRET} # Using environment variable
+    tokenSecret: ${TOKEN_SECRET}
     tokenExpirationMsec: 864000000
   cors:
     allowedOrigins: ${FRONTEND_URL},http://localhost:8080
   oauth2:
-    # After successfully authenticating with the OAuth2 Provider,
-    # we'll be generating an auth token for the user and sending the token to the
-    # redirectUri mentioned by the client in the /oauth2/authorize request.
-    # We're not using cookies because they won't work well in mobile clients.
     authorizedRedirectUris:
       - ${FRONTEND_URL}/oauth2/redirect
       - myandroidapp://oauth2/redirect
