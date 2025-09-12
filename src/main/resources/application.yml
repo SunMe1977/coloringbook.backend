@@ -79,3 +79,8 @@ app:
       - ${FRONTEND_URL}/oauth2/redirect
       - myandroidapp://oauth2/redirect
       - myiosapp://oauth2/redirect
+  rate-limit:
+    login-rps: 5.0 # 5 requests per second for login
+    signup-rps: 2.0 # 2 requests per second for signup
+    cache-expiry-minutes: 10 # Cache IP buckets for 10 minutes
+    max-cache-size: 1000 # Max 1000 IP addresses to track

@@ -29,6 +29,8 @@
     <lombok.version>1.18.38</lombok.version>
     <jjwt.version>0.12.5</jjwt.version>
     <liquibase.version>4.28.0</liquibase.version>
+    <bucket4j.version>8.2.0</bucket4j.version>
+    <caffeine.version>3.1.8</caffeine.version>
   </properties>
 
   <dependencies>
@@ -58,11 +60,6 @@
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context-indexer</artifactId>
-      <optional>true</optional>
-    </dependency>
     <!-- Liquibase for database migrations -->
     <dependency>
       <groupId>org.liquibase</groupId>
@@ -107,6 +104,26 @@
       <artifactId>lombok</artifactId>
       <version>${lombok.version}</version>
       <scope>provided</scope>
+    </dependency>
+
+    <!-- Removed Google Guava for RateLimiter -->
+    <!-- <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>${guava.version}</version>
+    </dependency> -->
+
+    <!-- Bucket4j for RateLimiter -->
+    <dependency>
+      <groupId>com.bucket4j</groupId>
+      <artifactId>bucket4j-core</artifactId>
+      <version>${bucket4j.version}</version>
+    </dependency>
+    <!-- Caffeine for in-memory cache for Bucket4j -->
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+      <version>${caffeine.version}</version>
     </dependency>
 
     <!-- Spring Boot Configuration Processor (optional) -->
