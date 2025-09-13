@@ -20,6 +20,12 @@ public class UserController {
     @PreAuthorize("hasRole('USER')")
     public User getCurrentUser(@CurrentUser UserPrincipal userPrincipal) {
         return userRepository.findById(userPrincipal.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userPrincipal.getId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "error.resourceNotFound", // Message key
+                        new Object[]{"User", "id", userPrincipal.getId()}, // Arguments for the message
+                        "User", // Resource name (for backward compatibility/context)
+                        "id", // Field name (for backward compatibility/context)
+                        userPrincipal.getId() // Field value (for backward compatibility/context)
+                ));
     }
 }

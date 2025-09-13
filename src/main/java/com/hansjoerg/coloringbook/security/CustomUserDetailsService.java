@@ -5,6 +5,8 @@ import com.hansjoerg.coloringbook.exception.ResourceNotFoundException;
 import com.hansjoerg.coloringbook.model.User;
 import com.hansjoerg.coloringbook.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,14 +19,18 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    private MessageSource messageSource;
+
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found with email : " + email)
-        );
+                .orElseThrow(() -> {
+                    String errorMessage = messageSource.getMessage("error.userNotFound", new Object[]{email}, LocaleContextHolder.getLocale());
+                    return new UsernameNotFoundException(errorMessage);
+                });
 
         return UserPrincipal.create(user);
     }
@@ -32,7 +38,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Transactional
     public UserDetails loadUserById(Long id) {
         User user = userRepository.findById(id).orElseThrow(
-            () -> new ResourceNotFoundException("User", "id", id)
+                () -> new ResourceNotFoundException("error.resourceNotFound", new Object[]{"User", "id", id}, "User", "id", id)
         );
 
         return UserPrincipal.create(user);

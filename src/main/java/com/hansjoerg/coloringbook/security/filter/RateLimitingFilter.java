@@ -15,6 +15,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -34,12 +36,14 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     private final double loginRps;
     private final double signupRps;
     private final long cacheExpiryMinutes;
+    private final MessageSource messageSource;
 
-    public RateLimitingFilter(AppProperties appProperties) {
+    public RateLimitingFilter(AppProperties appProperties, MessageSource messageSource) {
         this.loginRps = appProperties.getRateLimit().getLoginRps();
         this.signupRps = appProperties.getRateLimit().getSignupRps();
         this.cacheExpiryMinutes = appProperties.getRateLimit().getCacheExpiryMinutes();
         long maxCacheSize = appProperties.getRateLimit().getMaxCacheSize();
+        this.messageSource = messageSource;
 
         this.loginBuckets = Caffeine.newBuilder()
                 .expireAfterAccess(cacheExpiryMinutes, TimeUnit.MINUTES)
@@ -61,14 +65,16 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             Bucket bucket = loginBuckets.get(clientIp, k -> createNewBucket(loginRps));
             if (!bucket.tryConsume(1)) {
                 logger.warn("Rate limit exceeded for login from IP: {}", clientIp);
-                sendTooManyRequestsResponse(response, "Too many login attempts. Please try again later.");
+                String localizedMessage = messageSource.getMessage("error.tooManyRequests", null, LocaleContextHolder.getLocale());
+                sendTooManyRequestsResponse(response, localizedMessage);
                 return;
             }
         } else if (requestURI.equals("/auth/signup")) {
             Bucket bucket = signupBuckets.get(clientIp, k -> createNewBucket(signupRps));
             if (!bucket.tryConsume(1)) {
                 logger.warn("Rate limit exceeded for signup from IP: {}", clientIp);
-                sendTooManyRequestsResponse(response, "Too many signup attempts. Please try again later.");
+                String localizedMessage = messageSource.getMessage("error.tooManyRequests", null, LocaleContextHolder.getLocale());
+                sendTooManyRequestsResponse(response, localizedMessage);
                 return;
             }
         }
@@ -77,12 +83,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
     }
 
     private Bucket createNewBucket(double requestsPerSecond) {
-        // Using Bandwidth.simple() as a workaround if Bandwidth.builder() is not being resolved.
-        // This creates a bucket with a capacity equal to requestsPerSecond,
-        // and refills that many tokens every second. This is functionally
-        // similar to a greedy refill with capacity = refill rate.
         Bandwidth limit = Bandwidth.simple((long) requestsPerSecond, Duration.ofSeconds(1));
-
         return Bucket4j.builder().addLimit(limit).build();
     }
 

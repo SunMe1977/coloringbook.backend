@@ -1,15 +1,15 @@
 package com.hansjoerg.coloringbook.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hansjoerg.coloringbook.payload.ApiResponse;
 import com.hansjoerg.coloringbook.payload.AuthResponse; // Import AuthResponse
 import com.hansjoerg.coloringbook.security.*;
 import com.hansjoerg.coloringbook.security.filter.JsonUsernamePasswordAuthenticationFilter;
+import com.hansjoerg.coloringbook.security.filter.RateLimitingFilter; // Import RateLimitingFilter
 import com.hansjoerg.coloringbook.security.handler.JsonAuthenticationFailureHandler;
 import com.hansjoerg.coloringbook.security.oauth2.*;
-import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource; // Import MessageSource
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -32,8 +32,6 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.io.IOException;
-
 import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
@@ -51,6 +49,7 @@ public class SecurityConfig {
     private final HttpSessionOAuth2AuthorizationRequestRepository httpSessionOAuth2AuthorizationRequestRepository;
     private final TokenProvider tokenProvider;
     private final JsonAuthenticationFailureHandler jsonAuthenticationFailureHandler;
+    private final MessageSource messageSource;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public SecurityConfig(AppProperties appProperties,
@@ -60,7 +59,8 @@ public class SecurityConfig {
                           OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler,
                           HttpSessionOAuth2AuthorizationRequestRepository httpSessionOAuth2AuthorizationRequestRepository,
                           TokenProvider tokenProvider,
-                          JsonAuthenticationFailureHandler jsonAuthenticationFailureHandler) {
+                          JsonAuthenticationFailureHandler jsonAuthenticationFailureHandler,
+                          MessageSource messageSource) {
         this.appProperties = appProperties;
         this.customUserDetailsService = customUserDetailsService;
         this.customOAuth2UserService = customOAuth2UserService;
@@ -69,6 +69,7 @@ public class SecurityConfig {
         this.httpSessionOAuth2AuthorizationRequestRepository = httpSessionOAuth2AuthorizationRequestRepository;
         this.tokenProvider = tokenProvider;
         this.jsonAuthenticationFailureHandler = jsonAuthenticationFailureHandler;
+        this.messageSource = messageSource;
     }
 
     @Bean
@@ -96,7 +97,7 @@ public class SecurityConfig {
     public JsonUsernamePasswordAuthenticationFilter jsonUsernamePasswordAuthenticationFilter(
             AuthenticationManager authenticationManager,
             JsonAuthenticationFailureHandler jsonAuthenticationFailureHandler,
-            TokenProvider tokenProvider) { // Removed AppProperties as it's not needed for success handler anymore
+            TokenProvider tokenProvider) {
         JsonUsernamePasswordAuthenticationFilter filter = new JsonUsernamePasswordAuthenticationFilter();
         filter.setAuthenticationManager(authenticationManager);
         filter.setFilterProcessesUrl("/auth/login");
@@ -109,6 +110,11 @@ public class SecurityConfig {
         });
         filter.setAuthenticationFailureHandler(jsonAuthenticationFailureHandler);
         return filter;
+    }
+
+    @Bean
+    public RateLimitingFilter rateLimitingFilter() {
+        return new RateLimitingFilter(appProperties, messageSource); // Pass messageSource
     }
 
     @Bean
@@ -131,7 +137,7 @@ public class SecurityConfig {
                 .cors(withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(new RestAuthenticationEntryPoint()))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(new RestAuthenticationEntryPoint(messageSource))) // Pass messageSource
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/oauth2/**", "/").permitAll()
                         .anyRequest().authenticated()
@@ -153,7 +159,8 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider())
                 // Use the bean for JsonUsernamePasswordAuthenticationFilter
                 .addFilterBefore(jsonUsernamePasswordAuthenticationFilter(authenticationManager, jsonAuthenticationFailureHandler, tokenProvider), UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitingFilter(), JsonUsernamePasswordAuthenticationFilter.class); // Add RateLimitingFilter before JSON auth filter
 
         return http.build();
     }

@@ -8,6 +8,8 @@ import com.hansjoerg.coloringbook.security.UserPrincipal;
 import com.hansjoerg.coloringbook.security.oauth2.user.OAuth2UserInfo;
 import com.hansjoerg.coloringbook.security.oauth2.user.OAuth2UserInfoFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -25,6 +27,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private MessageSource messageSource;
+
     @Override
     public OAuth2User loadUser(OAuth2UserRequest oAuth2UserRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(oAuth2UserRequest);
@@ -35,7 +40,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw ex;
         } catch (Exception ex) {
             // Throwing an instance of AuthenticationException will trigger the OAuth2AuthenticationFailureHandler
-            throw new InternalAuthenticationServiceException(ex.getMessage(), ex.getCause());
+            String errorMessage = messageSource.getMessage("error.oauth2.generic", new Object[]{ex.getMessage()}, LocaleContextHolder.getLocale());
+            throw new InternalAuthenticationServiceException(errorMessage, ex.getCause());
         }
     }
 
@@ -45,8 +51,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 oAuth2User.getAttributes()
         );
 
-        if (StringUtils.isEmpty(oAuth2UserInfo.getEmail())) {
-            throw new OAuth2AuthenticationProcessingException("Email not found from OAuth2 provider");
+        if (!StringUtils.hasText(oAuth2UserInfo.getEmail())) { // Changed from isEmpty to hasText for consistency
+            throw new OAuth2AuthenticationProcessingException("error.oauth2.emailNotFound"); // Use message key
         }
 
         Optional<User> userOptional = userRepository.findByEmail(oAuth2UserInfo.getEmail());
@@ -55,9 +61,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (userOptional.isPresent()) {
             user = userOptional.get();
             if (!user.getProvider().equals(AuthProvider.valueOf(oAuth2UserRequest.getClientRegistration().getRegistrationId()))) {
+                // Use message key and pass provider as argument
                 throw new OAuth2AuthenticationProcessingException(
-                        "Looks like you're signed up with " + user.getProvider() +
-                                " account. Please use your " + user.getProvider() + " account to login."
+                        "error.oauth2.providerMismatch", user.getProvider().toString()
                 );
             }
             user = updateExistingUser(user, oAuth2UserInfo);

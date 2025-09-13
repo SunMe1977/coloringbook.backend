@@ -15,7 +15,8 @@ public class OAuth2UserInfoFactory {
         } else if (registrationId.equalsIgnoreCase(AuthProvider.github.toString())) {
             return new GithubOAuth2UserInfo(attributes);
         } else {
-            throw new OAuth2AuthenticationProcessingException("Sorry! Login with " + registrationId + " is not supported yet.");
+            // Use message key and pass registrationId as argument
+            throw new OAuth2AuthenticationProcessingException("error.oauth2.notSupported", registrationId);
         }
     }
 }

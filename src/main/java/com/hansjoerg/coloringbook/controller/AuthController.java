@@ -8,7 +8,10 @@ import com.hansjoerg.coloringbook.payload.AuthResponse;
 import com.hansjoerg.coloringbook.payload.SignUpRequest;
 import com.hansjoerg.coloringbook.repository.UserRepository;
 import com.hansjoerg.coloringbook.security.TokenProvider;
+import com.hansjoerg.coloringbook.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,31 +40,42 @@ public class AuthController {
     @Autowired
     private TokenProvider tokenProvider;
 
+    @Autowired
+    private MessageSource messageSource;
+
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new BadRequestException("Email address already in use.");
+            throw new BadRequestException("error.emailAlreadyInUse");
         }
 
-        // Create user
+        // Creating user's account
         User user = new User();
         user.setName(signUpRequest.getName());
         user.setEmail(signUpRequest.getEmail());
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
         user.setProvider(AuthProvider.local);
-        userRepository.save(user); // Save the user
 
-        // Perform authentication (auto-login)
+        User result = userRepository.save(user);
+
+        // Authenticate the newly registered user and generate a token
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         signUpRequest.getEmail(),
                         signUpRequest.getPassword()
                 )
         );
+
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Generate token
         String token = tokenProvider.createToken(authentication);
-        return ResponseEntity.ok(new AuthResponse(token)); // Return 200 OK with AuthResponse
+
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentContextPath().path("/user/me")
+                .buildAndExpand(result.getId()).toUri();
+
+        // Return AuthResponse with the token
+        return ResponseEntity.created(location)
+                .body(new AuthResponse(token));
     }
 }
