@@ -73,13 +73,13 @@ app:
     tokenSecret: ${TOKEN_SECRET}
     tokenExpirationMsec: 864000000
   cors:
-    allowedOrigins:${FRONTEND_URL},http://localhost:8080,https://coloringbook-backend-ikyz.onrender.com
+    allowedOrigins: ${FRONTEND_URL},http://localhost:8080,https://coloringbook-backend-ikyz.onrender.com,https://aiselfpubcoloringbookstudio.netlify.app
   oauth2:
     authorizedRedirectUris:
       - ${FRONTEND_URL}/oauth2/redirect
       - myandroidapp://oauth2/redirect
       - myiosapp://oauth2/redirect
-  rate-limit:
+  rate-limit: # New RateLimit configuration
     login-rps: 3.0 # 3 requests per second for login (slightly stricter for prod)
     signup-rps: 1.0 # 1 request per second for signup (stricter for prod)
     cache-expiry-minutes: 15 # Cache IP buckets for 15 minutes
